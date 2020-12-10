@@ -1,5 +1,6 @@
 import 'package:Fluttegram/model/StorySeenCountModel.dart';
-import 'package:Fluttegram/util/utility.dart';
+import 'package:Fluttegram/theme/ThemeSettings.dart';
+import 'package:Fluttegram/util/Utility.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dashed_circle/dashed_circle.dart';
@@ -60,7 +61,7 @@ class _StoryState extends State<Story> with SingleTickerProviderStateMixin {
                   margin: EdgeInsets.symmetric(horizontal: 0, vertical: 3),
                   child: Text(
                     'ruslan',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    style: TextStyle(fontSize: 10),
                   ))
             ],
           ));

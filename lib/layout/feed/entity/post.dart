@@ -1,8 +1,11 @@
-import 'package:Fluttegram/util/utility.dart';
+import 'package:Fluttegram/theme/ThemeSettings.dart';
+import 'package:Fluttegram/util/Utility.dart';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'hero_photo_post.dart';
+import 'HeroPhotoPost.dart';
+import 'ReactionsScreen.dart';
 
 class Post extends StatefulWidget {
   final String username;
@@ -12,14 +15,27 @@ class Post extends StatefulWidget {
   final String postedTime;
   final String tag;
 
+  final bool isImageSrcNetwork;
+  Image userImage;
+  Image contentImage;
+
   int nLikes = 0;
 
   Post(
       [this.username = "ruslan",
       this.userImagePath = "assets/images/avatar.jpg",
       this.contentImagePath = "assets/images/post.jpg",
+      this.isImageSrcNetwork = false,
       this.description = " Have a nice day :)",
-      this.postedTime = "1 hour ago"])
+      this.postedTime = "8 hours ago"])
+      : this.tag = Utility.getRandomTag(9);
+
+  Post.customized(
+      this.description, this.username, this.userImage, this.contentImage,
+      [this.userImagePath = "",
+      this.contentImagePath = "",
+      this.isImageSrcNetwork = true,
+      this.postedTime = "8 hours ago"])
       : this.tag = Utility.getRandomTag(9);
 
   @override
@@ -27,7 +43,6 @@ class Post extends StatefulWidget {
 }
 
 class _PostState extends State<Post> {
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -43,6 +58,18 @@ class _PostState extends State<Post> {
         ));
   }
 
+  Image _buildAvatar() {
+    return widget.isImageSrcNetwork
+        ? widget.userImage
+        : Image.asset(widget.userImagePath);
+  }
+
+  Image _buildContentPhoto() {
+    return widget.isImageSrcNetwork
+        ? widget.contentImage
+        : Image.asset(widget.contentImagePath);
+  }
+
   Widget buildPostHeader() {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 10, vertical: 2),
@@ -51,12 +78,11 @@ class _PostState extends State<Post> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              CircleAvatar(backgroundImage: AssetImage(widget.userImagePath)),
+              CircleAvatar(child: ClipOval(child:_buildAvatar())),
               Container(
                 margin: EdgeInsets.only(left: 10),
                 child: Text(
                   widget.username,
-                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ],
@@ -64,7 +90,6 @@ class _PostState extends State<Post> {
           IconButton(
             icon: Icon(
               Icons.linear_scale,
-              color: Colors.white,
             ),
             onPressed: () {},
           ),
@@ -92,11 +117,11 @@ class _PostState extends State<Post> {
                           builder: (context) => HeroPhotoPage(
                               widget.username,
                               widget.tag,
-                              Image.asset(widget.contentImagePath),
+                              _buildContentPhoto(),
                               widget.description,
                               widget.nLikes,
                               doLikeFunction))),
-                  child: Image.asset(widget.contentImagePath))),
+                  child: _buildContentPhoto())),
         ),
         buildInteractionRow()
       ],
@@ -104,6 +129,7 @@ class _PostState extends State<Post> {
   }
 
   Widget buildInteractionRow() {
+    final model = Provider.of<ThemeNotifier>(context, listen: false);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
@@ -112,7 +138,9 @@ class _PostState extends State<Post> {
             IconButton(
               icon: Icon(
                 Icons.favorite_border,
-                color: widget.nLikes == 0 ? Colors.white : Colors.red,
+                color: widget.nLikes == 0
+                    ? Utility.defineColorDependingOnTheme(!model.isDarkTheme)
+                    : Colors.red,
               ),
               onPressed: () {
                 doLikeFunction(1);
@@ -120,19 +148,28 @@ class _PostState extends State<Post> {
             ),
             Text(
               'Likes: ${widget.nLikes}',
-              style: TextStyle(color: widget.nLikes == 0 ? Colors.white : Colors.red),
+              style: TextStyle(
+                  color: widget.nLikes == 0
+                      ? Utility.defineColorDependingOnTheme(!model.isDarkTheme)
+                      : Colors.red),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.important_devices, //reactions
+              ),
+              onPressed: () {
+                _navigateToReactions(context);
+              },
             ),
             IconButton(
               icon: Icon(
                 Icons.mode_comment,
-                color: Colors.white,
               ),
               onPressed: () {},
             ),
             IconButton(
               icon: Icon(
                 Icons.send,
-                color: Colors.white,
               ),
               onPressed: () {},
             ),
@@ -141,12 +178,25 @@ class _PostState extends State<Post> {
         IconButton(
           icon: Icon(
             Icons.bookmark_border,
-            color: Colors.white,
           ),
           onPressed: () {},
-        )
+        ),
       ],
     );
+  }
+
+  ///hide previous snackbar and show the new result.
+  void _navigateToReactions(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ReactionScreen()),
+    ).then((value) => Scaffold.of(context)
+      ..removeCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+          content:
+              Text("You reacted with [" + "$value" + "] on this Post."))))
+    .catchError((err) => throw "Can not make reaction.");
+
   }
 
   Widget buildSubtitle() {
@@ -156,13 +206,13 @@ class _PostState extends State<Post> {
         children: <Widget>[
           Text(
             widget.username,
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
           Flexible(
             child: Text(
               widget.description,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(),
             ),
           ),
         ],
@@ -175,7 +225,7 @@ class _PostState extends State<Post> {
       margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
       alignment: Alignment.centerLeft,
       child: Text(
-        'All comments',
+        'See all comments',
         style: TextStyle(color: Colors.grey[700]),
       ),
     );
